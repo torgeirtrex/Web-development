@@ -1,0 +1,539 @@
+﻿<!DOCTYPE html>
+<html >
+<head>
+	<meta charset="UTF-8">
+
+	<title>Bilklubben AS</title>
+
+    
+    <!--No page transition-->
+    <script>
+        $(document).bind("mobileinit", function () { $.mobile.defaultPageTransition = "none"; $.mobile.defaultDialogTransition = "none"; });
+    </script>
+
+<!-- lokale js filer -->
+    <script src="js/jquery-1.11.1.min.js"></script>
+    <script src="js/jquery.mobile-1.4.5.min.js"></script> <!--Versjon av jQuery rammerverk -->
+    <script type="text/javascript" src="js/underscore-min.js"></script>
+    <script type="text/javascript">
+
+		
+			//Lager rullerende forsidetekst
+			 var TxtRotate = function(el, toRotate, period) {
+			this.toRotate = toRotate;
+			this.el = el;
+			this.loopNum = 0;
+			this.period = parseInt(period, 10) || 2000;
+			this.txt = '';
+			this.tick();
+			this.isDeleting = false;
+			};
+
+			TxtRotate.prototype.tick = function() {
+			var i = this.loopNum % this.toRotate.length;
+			var fullTxt = this.toRotate[i];
+
+			if (this.isDeleting) {
+			this.txt = fullTxt.substring(0, this.txt.length - 1);
+			} else {
+			this.txt = fullTxt.substring(0, this.txt.length + 1);
+			}
+
+			this.el.innerHTML = '<span class="wrap">'+this.txt+'</span>';
+
+			var that = this;
+			var delta = 300 - Math.random() * 100;
+
+			if (this.isDeleting) { delta /= 2; }
+
+			if (!this.isDeleting && this.txt === fullTxt) {
+			delta = this.period;
+			this.isDeleting = true;
+			} else if (this.isDeleting && this.txt === '') {
+			this.isDeleting = false;
+			this.loopNum++;
+			delta = 500;
+			}
+
+			setTimeout(function() {
+			that.tick();
+			}, delta);
+			};
+
+			window.onload = function() {
+			var elements = document.getElementsByClassName('txt-rotate');
+			for (var i=0; i<elements.length; i++) {
+			var toRotate = elements[i].getAttribute('data-rotate');
+			var period = elements[i].getAttribute('data-period');
+			if (toRotate) {
+			new TxtRotate(elements[i], JSON.parse(toRotate), period);
+			}
+			}
+			// Definerer CSS
+				var css = document.createElement("style");
+				css.type = "css/styles.css";
+				css.innerHTML = ".txt-rotate > .wrap { border-right: 0.08em solid #666 }";
+				document.body.appendChild(css);
+				};
+		
+		
+		 // Innlogging
+        var loginname = "";
+        var loggedin = false;
+        var poengsaldo = "";
+        // Laster kart
+       $(document).on("pageshow",  function(e, data) {
+		//      
+		//      
+        });
+		
+        //Kaller biloversikt
+        $(document).ready(function () {
+                 $.post("Biloversikt2.php", {
+                   klasse : ""
+                }, function (data) {
+                    $("#biler").html(data);
+                    $('#biler').collapsibleset().trigger("create"); //oppdaterer for å få rett formattering
+                });	
+				 //bestill bil
+                  $(document).on("click","lagreknapp",function () {
+                    epostadresse = $('#epostadresse').val();
+                    startdato = $('#startdato').val();
+                    bestiltfratid = $('#fratid').val();
+                    bestilttiltid = $('#tiltid').val();
+                    $.post('behandlebestilling.php', { epostadresse: epostadresse, startdato: startdato, bestiltfratid: bestiltfratid, bestilttiltid: bestilttiltid, loginname: loginname, bilid: bilid }, function (data) {
+             //       $('#soekeresultat').html(data);
+                    document.getElementById("fradato").value = "";
+                    document.getElementById("tildato").value = "";
+                    document.getElementById("fratid").value = "";
+                    document.getElementById("tiltid").value = "";
+                    });
+                });
+				
+                    //Logginn
+                 $("#logon").click(function () {
+                     username = $('#username').val();
+                     password = $('#password').val();
+                     $.post('logon.php', { username: username, password: password}, function (data) {
+                         $('#melding').html(data);
+                         if (loggedin == true) {
+                             //alert("Du er pålogget");
+                             document.getElementById("loginnknapp").innerHTML = "Logg ut";
+                             $.mobile.navigate ('#hjem');
+                             $('#minside-loginnavn').text('Kundenavn: ' + loginname);
+                             $('#minside-poengsaldo').text('Poengsaldo: ' + poengsaldo);
+                       //      oppdaterBookinger();
+                             $('#minsideinfo').show();
+                             $('#minsideinfo-avlogget').hide();
+                             $('#bestillinfo').show();
+                             $('#bestill-avlogget').hide();
+                               } else {
+                             $("#popup-feil-passord").popup("open");
+                             //alert("Feil brukernavn eller passord! Prøv på nytt!");
+                         }
+                    });
+                 });
+
+            // Utlogging
+                 $("#loginnknapp").click(function () {
+                     if (loggedin == true) {
+                         //alert("Du har blitt logget ut!");
+                         $("#popup-logg-ut").popup("open");
+                             document.getElementById("loginnknapp").innerHTML = "Logg inn";
+                             document.getElementById("username").value = "";
+                             document.getElementById("password").value = "";
+                             loggedin = false;
+                             $('#minsideinfo').hide();
+                             $('#minsideinfo-avlogget').show();
+                             $('#bestillinfo').hide();
+                             $('#bestill-avlogget').show();
+                             //window.location = "#hjem";
+                     } else {
+                         //$(location).attr('href', '#login');
+                         $.mobile.navigate('#login');
+                         }
+                 });
+
+               //Ny bruker
+                $("#submit").click(function () {
+                    fornavn = $('#fornavn').val();
+                    etternavn = $('#etternavn').val();
+                    adresse = $('#adresse').val();
+                    postnr = $('#postnr').val();
+                    poststed = $('#poststed').val();
+                    land = $('#land').val();
+                    telefon = $('#telefon').val();
+                    mobiltelefon = $('#mobiltelefon').val();
+                    epost = $('#epost').val();
+                    passord = $('#passord').val();
+                    $.post('nybruker.php', { fornavn: fornavn, etternavn: etternavn, adresse: adresse, postnr: postnr, poststed: poststed, land:land, telefon:telefon, mobiltelefon:mobiltelefon, epost: epost, passord:passord}, function (data) {
+
+                        $("#dlg-sign-up-sent").popup("open");
+                    });
+                });		
+
+					//Sjekker om hele registreringsskjema er utfylt ved nye brukere
+                 function allFilled(formid) {
+                     var filled = true;
+                     $(formid).each(function () {
+                        if ($(this).val() == '') filled = false;
+                     });
+                     return filled;
+                 };
+
+				
+                //enable og disable Logg inn knapp
+                 $('#username, #password').bind('keyup', function () {
+                     if (allFilled('#check-user input')) $('#logon').button('enable');
+                     if (!allFilled('#check-user input')) $('#logon').button('disable');
+
+                 }); 
+/*
+
+*/ 
+				 //Sjekk om tilbakemeldingsknapp kan brukes
+                 $('#tilbakemeldingstekst, #bil, #bestillingsnummer' ).bind('keyup', function () {
+                     if (allFilled('#statusrapport input')) $('#tilbakemeldingsknapp').button('enable');
+                     if (!allFilled('#statusrapport input')) $('#tilbakemeldingsknapp').button('disable');
+                 });
+             });
+
+      </script>
+  
+	
+ <!-- Stilark brukt -->
+ <link rel="stylesheet" href="css/jquery.mobile-1.4.3.min.css" /> 
+    <link rel="stylesheet" href="css/jquery.mobile-1.4.5.min.css" /> 
+	<link rel="stylesheet" href="themes/Theme1.min.css" />
+    <link rel="stylesheet" href="themes/jquery.mobile.icons.min.css" />
+    <!--<link rel="stylesheet" href="icons/jqm.icons.css" /> -->
+    <link rel="stylesheet" href="css/styles.css" />	
+	
+</head>
+
+ <body>
+      
+        <!-- Hjem-->
+        <div data-role="page" data-theme="a" id="hjem" style="background-color: #fff;">
+            <div data-role="header" data-position="fixed">
+                <h2>Bilklubben AS</h2>
+                <a href="#" id="loginnknapp" class="ui-btn-right">Logg inn</a>
+            </div><!-- /header -->
+            <div role="main" class="ui-content">
+                <center>
+
+				<h1   font-weight: 200; margin: 0.4em 0; font-size: 3.5em; >Velkommen til bilklubben
+				<span
+				class="txt-rotate"
+					data-period="2000"
+				data-rotate='[ "Stavanger", "Oslo kommer snart", "Bergen kommer snart"]'></span>
+				</h1>
+								
+                    </a>
+                </center>
+                <ul data-role="listview" data-inset="true">
+                 
+                    <li data-theme="a"><a href="#biloversikt" class="ui-btn ui-btn-icon-left ui-icon-search">Biloversikt</a></li>
+                    <li data-theme="a"><a href="#bestill" class="ui-btn ui-btn-icon-left ui-icon-calendar">Bestill bil</a></li>
+                    <li data-theme="a"><a href="#minside" class="ui-btn ui-btn-icon-left ui-icon-user">Min side</a></li>
+                    <li data-theme="a"><a href="#statusrapport" class="ui-btn ui-btn-icon-left ui-icon-comment">Gi oss feedback</a></li>
+                </ul>
+
+                <div data-role="popup" id="popup-logg-ut" data-dismissible="false" style="max-width:400px;">
+                    <div data-role="header">
+                        <h1>Utlogging</h1>
+                    </div>
+                    <div role="main" class="ui-content">
+                        <h3>Logget ut</h3>
+                        <p>Du har blitt logget ut. Klikk Logg inn for å logge deg inn på nytt.</p>
+                        <div class="mc-text-center"><a href="#login" class="ui-btn ui-corner-all ui-shadow ui-btn-b mc-top-margin-1-5">OK</a></div>
+                    </div>
+                </div>
+            </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home" class="ui-btn-active ui-state-persist">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Login-->
+        <div data-role="page" data-theme="a" id="login" style="background-color: #b3ecec;">
+            <div data-role="header" data-position="fixed">
+                <h2>Logg inn</h2>
+            </div>
+            <div role="main" class="ui-content">
+                <form id="check-user" data-ajax="true" method="post" action="#">
+                    <label for="username">Brukernavn</label>
+                    <input type="text" name="username" id="username" value="">
+                    <label for="password">Passord</label>
+                    <input type="password" name="password" id="password" value="">
+                    <input type="button" data-theme="b" id="logon" data-inline="true" class="ui-btn ui-btn-b ui-btn-inline ui-corner-all" value="Logg inn" disabled>
+                </form>
+                <div id="melding"></div><br /><br /><br />
+
+                <a href="#nybruker" class="ui-btn ui-corner-all">Registrer ny bruker</a>
+                 <div data-role="popup" id="popup-feil-passord" data-dismissible="false" style="max-width:400px;">
+                    <div data-role="header">
+                        <h1>Feil pålogging</h1>
+                    </div>
+                    <div role="main" class="ui-content">
+                        <h3>Feil Brukernavn eller passord</h3>
+                        <p>Sjekk at du har skrevet brukernavn og passord riktig.</p>
+                        <div class="mc-text-center"><a href="#login" class="ui-btn ui-corner-all ui-shadow ui-btn-b mc-top-margin-1-5">OK</a></div>
+                    </div>
+                </div>
+            </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#Statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Ny bruker-->
+        <div data-role="page" data-theme="a" id="nybruker" style="background-color: #b3ecec;">
+            <div data-role="header" data-position="fixed">
+                <h2>Ny bruker</h2>
+            </div>
+            <div role="main" class="ui-content">
+                <form id="ny-bruker" data-ajax="false" method="post" action='#'>
+                    <label for="fornavn">Fornavn *</label>
+                    <input type="text" name="fornavn" id="fornavn" value="">
+                    <label for="etternavn">Etternavn *</label>
+                    <input type="text" name="etternavn" id="etternavn" value="">
+                    <label for="adresse">Adresse *</label>
+                    <input type="text" name="adresse" id="adresse" value="">
+                    <label for="postnr">Postnr *</label>
+                    <input type="text" name="postnr" id="postnr" value="">
+                    <label for="poststed">Poststed *</label>
+                    <input type="text" name="poststed" id="poststed" value="">
+                    <label for="land">Land *</label>
+                    <input type="text" name="land" id="land" value="">
+                    <label for="telefon">Telefon *</label>
+                    <input type="text" name="telefon" id="telefon" value="">
+                    <label for="mobiltelefon">Mobiltelefon *</label>
+                    <input type="text" name="mobiltelefon" id="mobiltelefon" value="">
+                    <label for="epost">E-post adresse *</label>
+                    <input type="text" name="epost" id="epost" value="">
+                    <label for="passord">Passord *</label>
+                    <input type="password" name="passord" id="passord" value="">
+
+                    <a href="#dlg-sign-up-sent" data-rel="popup" data-transition="pop"  data-theme="b" name="submit" id="opprett-bruker" data-inline="true" class="ui-btn ui-btn-b ui-btn-inline ui-corner-all" value="Opprett"> Registrer meg</a> 
+                </form>
+                <div data-role="popup" id="dlg-sign-up-sent" data-dismissible="false" style="max-width:400px;">
+                    <div data-role="header">
+                        <h1>Ny bruker</h1>
+                    </div>
+                    <div role="main" class="ui-content">
+                        <h3>Velkommen til Bilklubben AS</h3>
+                        <p>Vi har opprettet deg som ny bruker. Du kan nå logge inn.</p>
+                        <div class="mc-text-center"><a href="#login" class="ui-btn ui-corner-all ui-shadow ui-btn-b mc-top-margin-1-5">OK</a></div>
+                    </div>
+                </div>
+            </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>        
+
+        <!-- Bestill -->
+        <div data-role="page" data-theme="a" id="bestill" style="background-color: #fff;">
+         <div data-role="header" data-position="fixed">
+                <h2>Bestill bil</h2>
+            </div><!-- /header -->
+            <div role="main" class="ui-content">
+			
+			
+<h1> Registrer utleie</h1>
+<form name="skjema" action="behandlebestilling.php" method="get">
+<!-- Feilmelding overskrift -->
+<div id="feilboks1"></div>
+
+    <p>Epost til utleier <br />
+    <input type="text" name="epost_kunde" id="epostadresse"/>
+    </p>
+<!-- Feilmelding selve nyheten -->	
+ <div id="feilboks2"></div>   
+    <p>Startdato utleie <br />
+    <input type="date" name="startdato" id="startdato"></textarea>
+    </p>
+ <div id="feilboks2"></div>   
+    <p>Sluttdato utleie <br />
+    <input type="date" name="leveringsdato" id="sluttdato"></textarea>
+    </p>
+    <p>Velg bil: <br />
+	
+	<select name="bil"/>
+  <optgroup label="Mitsubishi">
+    <option value="1">Mitsubishi ASX</option>
+  </optgroup>
+  <optgroup label="Toyota">
+    <option value="2">Toyota RAV</option>
+  </optgroup>
+    <optgroup label="Volkswagen">
+    <option value="3">Volkswagen Passat</option>
+  </optgroup>
+</select>
+
+<input type="submit" value="Lagre bestilling" name="lagreknapp"  />
+    </p> 
+</form>		
+				
+                <div id="bestill-avlogget">
+                    <center>
+                        <p>
+                            Du må logge inn for å søke etter og bestille bil.
+                        </p>
+                    </center>
+                </div>
+          </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar" class="ui-btn-active ui-state-persist">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Profilside -->
+        <div data-role="page" data-theme="a" id="minside" style="background-color: #fff;">
+            <div data-role="header" data-position="fixed">
+                <h2>Min side</h2>
+            </div><!-- /header -->
+
+            <div role="main" class="ui-content">
+                <div id="minsideinfo" hidden>
+                    <center>
+                        <p id="minside-loginnavn"></p>
+                        <p id="minside-poengsaldo"></p>
+                        <strong><br />Mine bestillinger</strong>
+                    </center>
+
+                </div>
+                <div id="minsideinfo-avlogget">
+                    <center>
+                        <p>
+                            Du må logge inn for å se din info.
+                        </p>
+                    </center>
+                </div>
+            </div>
+          
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user" class="ui-btn-active ui-state-persist">Min side</a></li>
+                            <li><a href="#statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+
+        <!-- Biloversikt -->
+        <div data-role="page" data-theme="a" id="biloversikt" style="background-color: #fff;">
+            <div data-role="header" data-position="fixed">
+                <h2>Biloversikt</h2>
+            </div>
+            <div role="main" class="ui-content">
+                <div id="biler">
+                </div>
+            </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#statusrapport" data-icon="comment">Tilbakemelding</a></li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <div data-role="page" data-theme="a" id="statusrapport" style="background-color: #fff;">
+            <div data-role="header" data-position="fixed">
+                <h2>Statusrapport utleie</h2>
+            </div><!-- /header -->
+           <div role="main" class="ui-content">
+		
+<h1> Registrer utleie</h1>
+<form name="skjema" action="behandlebestilling.php" method="get" onsubmit="return validerSkjema();" >
+    <p>Velg bil: <br />
+	
+	<select name="bil" id="bil"/>
+  <optgroup label="Mitsubishi">
+    <option value="1">Mitsubishi ASX</option>
+  </optgroup>
+  <optgroup label="Toyota">
+    <option value="2">Toyota RAV</option>
+  </optgroup>
+    <optgroup label="Volkswagen">
+    <option value="3">Volkswagen Passat</option>
+  </optgroup>
+</select>
+
+<p>
+Bestillingsnummer for bilutleie <br />
+<input type="text" name="bestillingsnummer" id="bestillingsnummer">
+</p>
+    </p>
+<p>Skriv inn tilbakemeldingen: <br />
+<textarea rows="5" cols="30" name="tilbakemeldingstekst" id="tilbakemeldingstekst"></textarea>
+</p>
+<input type="submit" value="Send tilbakmelding" name="lagreknapp"  />
+</form>
+      </div>
+            <div data-role="footer" data-id="foo1" data-position="fixed">
+                <nav>
+                    <div data-role="navbar">
+                        <ul>
+                            <li><a href="#hjem" data-icon="home">Hjem</a></li>
+                            <li><a href="#bestill" data-icon="calendar">Bestill</a></li>
+                            <li><a href="#minside" data-icon="user">Min side</a></li>
+                            <li><a href="#statusrapprt" data-icon="comment" class="ui-btn-active ui-state-persist">Tilbakemelding</a></li>
+
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </body>
+</html>
+
